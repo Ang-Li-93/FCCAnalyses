@@ -93,7 +93,7 @@ class runDataFrameFinal():
             if os.path.isdir(self.baseDir+pr):
                 print ('is dir found')
                 import glob
-                flist=glob.glob(self.baseDir+pr+"/flat_chunk_*.root")
+                flist=glob.glob(self.baseDir+pr+"/chunk*.root")
                 for f in flist:
                     tfin = ROOT.TFile.Open(f)
                     print (f,'    ===    ',tfin, '  ',type(tfin))
