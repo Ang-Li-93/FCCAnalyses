@@ -1,4 +1,5 @@
 #include "FCCAnalyses/Algorithms.h"
+#include "FCCAnalyses/Utils.h"
 #include "Math/Minimizer.h"
 #include "Math/IFunction.h"
 #include "Math/Factory.h"
@@ -12,7 +13,9 @@
 #include "Math/Functor.h"
 #include "Math/LorentzVector.h"
 
-using namespace Algorithms;
+namespace FCCAnalyses{
+
+namespace Algorithms{
 
 sphericityFit::sphericityFit(const ROOT::VecOps::RVec<float> & arg_px,
 	                           const ROOT::VecOps::RVec<float> & arg_py,
@@ -21,7 +24,7 @@ sphericityFit::sphericityFit(const ROOT::VecOps::RVec<float> & arg_px,
 	_py=arg_py;
 	_pz=arg_pz;
 }
-float Algorithms::sphericityFit::operator()(const double *pars){
+float sphericityFit::operator()(const double *pars){
 
   double num = 0.;
   double den = 0.;
@@ -55,7 +58,7 @@ minimize_sphericity::minimize_sphericity(std::string arg_minname,
   _min->SetTolerance(_tolerance);
   _min->SetPrintLevel(0);
 }
-ROOT::VecOps::RVec<float> Algorithms::minimize_sphericity::operator()(const ROOT::VecOps::RVec<float> & px,
+ROOT::VecOps::RVec<float> minimize_sphericity::operator()(const ROOT::VecOps::RVec<float> & px,
 	                                                                    const ROOT::VecOps::RVec<float> & py,
 																																			const ROOT::VecOps::RVec<float> & pz){
   _min->SetVariable(0,"x",_variable[0], _step[0]);
@@ -91,7 +94,7 @@ thrustFit::thrustFit(const ROOT::VecOps::RVec<float> & arg_px,
 	_py=arg_py;
 	_pz=arg_pz;
 }
-float Algorithms::thrustFit::operator()(const double *pars){
+float thrustFit::operator()(const double *pars){
 
   double num = 0.;
   double den = 0.;
@@ -124,7 +127,7 @@ minimize_thrust::minimize_thrust(std::string arg_minname,
   _min->SetTolerance(_tolerance);
   _min->SetPrintLevel(0);
 }
-ROOT::VecOps::RVec<float> Algorithms::minimize_thrust::operator()(const ROOT::VecOps::RVec<float> & px,
+ROOT::VecOps::RVec<float> minimize_thrust::operator()(const ROOT::VecOps::RVec<float> & px,
 	                                                                const ROOT::VecOps::RVec<float> & py,
 																																	const ROOT::VecOps::RVec<float> & pz){
   _min->SetVariable(0,"x",_variable[0], _step[0]);
@@ -161,12 +164,156 @@ ROOT::VecOps::RVec<float> Algorithms::minimize_thrust::operator()(const ROOT::Ve
 }
 
 
+ROOT::VecOps::RVec<float> Algorithms::calculate_thrust::operator()(
+    const ROOT::VecOps::RVec<float>& px,
+    const ROOT::VecOps::RVec<float>& py,
+    const ROOT::VecOps::RVec<float>& pz) {
+
+  if (px.size() != py.size()) {
+    throw std::domain_error("calculate_thrust: Input vector sizes are not equal.");
+  }
+  if (px.size() != pz.size()) {
+    throw std::domain_error("calculate_thrust: Input vector sizes are not equal.");
+  }
+
+  ROOT::VecOps::RVec<float> result;
+
+  size_t nParticles = px.size();
+  if (nParticles < 2) {
+    // std::cout << "calculate_thrust: Number of input particles too small."
+    //           << std::endl;
+
+    result.push_back(-1);
+    result.push_back(-1);
+    result.push_back(-1);
+    result.push_back(-1);
+
+    return result;
+  }
+
+  // std::cout << "calculate_thrust: Calculating sum of all particles in event"
+  //           << std::endl;
+
+  // Array to store x, y, z and magnitude squared of the particles.
+  // 0 -- magnitude squared, 1 -- x, 2 -- y, 3 -- z
+  float pArr[nParticles][4];
+  float pSum = 0.;
+  for (size_t i = 0; i < nParticles; ++i) {
+    pArr[i][1] = px[i];
+    pArr[i][2] = py[i];
+    pArr[i][3] = pz[i];
+    mag2(pArr[i]);
+    pSum += std::sqrt(pArr[i][0]);
+  }
+
+  // Trying all combinations of reference vector orthogonal to two selected
+  // particles.
+  // std::cout << "Trying all combinations..." << std::endl;
+  float pMax[4] = {0., 0., 0., 0.};
+  for (size_t i = 0; i < nParticles - 1; ++i) {
+    for (size_t j = i + 1; j < nParticles; ++j) {
+      float nRef[4];
+      cross(nRef, pArr[i], pArr[j]);
+      mag2(nRef);
+      unit(nRef);
+
+      float pPart[4] = {0., 0., 0., 0.};
+      for (size_t k = 0; k < nParticles; ++k) {
+        if (k == i || k == j) {
+          continue;
+        }
+
+        if (dot(nRef, pArr[k]) > 0.) {
+          plus(pPart, pPart, pArr[k]);
+        } else {
+          minus(pPart, pPart, pArr[k]);
+        }
+      }
+
+      float pFullArr[4][4];
+      // pPart + pArr[i] + pArr[j]
+      plus(pFullArr[0], pPart, pArr[i]);
+      plus(pFullArr[0], pFullArr[0], pArr[j]);
+
+      // pPart + pArr[i] - pArr[j]
+      plus(pFullArr[1], pPart, pArr[i]);
+      minus(pFullArr[1], pFullArr[1], pArr[j]);
+
+      // pPart - pArr[i] + pArr[j]
+      minus(pFullArr[2], pPart, pArr[i]);
+      plus(pFullArr[2], pFullArr[2], pArr[j]);
+
+      // pPart - pArr[i] - pArr[j]
+      minus(pFullArr[3], pPart, pArr[i]);
+      minus(pFullArr[3], pFullArr[3], pArr[j]);
+
+      for (size_t k = 0; k < 4; ++k) {
+        mag2(pFullArr[k]);
+        if (pFullArr[k][0] > pMax[0]) {
+          copy(pMax, pFullArr[k]);
+        }
+      }
+    }
+  }
+
+  float pMaxMag = std::sqrt(pMax[0]);
+  // std::cout << "Thrust value arr: " << pMaxMag / pSum << std::endl;
+  result.push_back(pMaxMag / pSum);
+  // Normalizing the thrust vector
+  result.push_back(pMax[1]/pMaxMag);
+  result.push_back(pMax[2]/pMaxMag);
+  result.push_back(pMax[3]/pMaxMag);
+
+  return result;
+}
+
+inline void Algorithms::calculate_thrust::mag2(float (&vec)[4]) {
+  vec[0] = vec[1]*vec[1] + vec[2]*vec[2] + vec[3]*vec[3];
+}
+
+inline float Algorithms::calculate_thrust::dot(float vec1[4], float vec2[4]) {
+  return vec1[1]*vec2[1] + vec1[2]*vec2[2] + vec1[3]*vec2[3];
+}
+
+inline void Algorithms::calculate_thrust::cross(float (&vec)[4], float vec1[4], float vec2[4]) {
+  vec[1] = vec1[2]*vec2[3] - vec1[3]*vec2[2];
+  vec[2] = vec1[3]*vec2[1] - vec1[1]*vec2[3];
+  vec[3] = vec1[1]*vec2[2] - vec1[2]*vec2[1];
+}
+
+inline void Algorithms::calculate_thrust::unit(float (&vec)[4]) {
+  float mag = std::sqrt(vec[0]);
+  vec[1] = vec[1]/mag;
+  vec[2] = vec[2]/mag;
+  vec[3] = vec[3]/mag;
+}
+
+inline void Algorithms::calculate_thrust::plus(float (&vec)[4], float vecIn1[4], float vecIn2[4]) {
+  vec[1] = vecIn1[1] + vecIn2[1];
+  vec[2] = vecIn1[2] + vecIn2[2];
+  vec[3] = vecIn1[3] + vecIn2[3];
+}
+
+inline void Algorithms::calculate_thrust::minus(float (&vecOut)[4], float vecIn1[4], float vecIn2[4]) {
+  vecOut[1] = vecIn1[1] - vecIn2[1];
+  vecOut[2] = vecIn1[2] - vecIn2[2];
+  vecOut[3] = vecIn1[3] - vecIn2[3];
+}
+
+inline void Algorithms::calculate_thrust::copy(float (&vecOut)[4], float vecIn[4]) {
+  vecOut[0] = vecIn[0];
+  vecOut[1] = vecIn[1];
+  vecOut[2] = vecIn[2];
+  vecOut[3] = vecIn[3];
+}
+
+
 getAxisCharge::getAxisCharge(bool arg_pos,
 	                           float arg_power){
   _pos = arg_pos;
 	_power = arg_power;
 }
-float  Algorithms::getAxisCharge::operator() (const ROOT::VecOps::RVec<float> & angle,
+float  getAxisCharge::operator() (const ROOT::VecOps::RVec<float> & angle,
 	                                            const ROOT::VecOps::RVec<float> & charge,
 																							const ROOT::VecOps::RVec<float> & px,
 																							const ROOT::VecOps::RVec<float> & py,
@@ -183,11 +330,10 @@ float  Algorithms::getAxisCharge::operator() (const ROOT::VecOps::RVec<float> & 
 }
 
 
-
 getAxisMass::getAxisMass(bool arg_pos){
   _pos=arg_pos;
 }
-float  Algorithms::getAxisMass::operator() (const ROOT::VecOps::RVec<float> & angle,
+float  getAxisMass::operator() (const ROOT::VecOps::RVec<float> & angle,
 	                                          const ROOT::VecOps::RVec<float> & energy,
 																						const ROOT::VecOps::RVec<float> & px,
 																						const ROOT::VecOps::RVec<float> & py,
@@ -206,7 +352,7 @@ float  Algorithms::getAxisMass::operator() (const ROOT::VecOps::RVec<float> & an
 getAxisEnergy::getAxisEnergy(bool arg_pos){
 	_pos=arg_pos;
 }
-ROOT::VecOps::RVec<float>  Algorithms::getAxisEnergy::operator() (const ROOT::VecOps::RVec<float> & angle,
+ROOT::VecOps::RVec<float>  getAxisEnergy::operator() (const ROOT::VecOps::RVec<float> & angle,
 	                                                                const ROOT::VecOps::RVec<float> & charge,
 																																	const ROOT::VecOps::RVec<float> & energy){
   ROOT::VecOps::RVec<float> result={0.,0.,0.};
@@ -229,7 +375,7 @@ ROOT::VecOps::RVec<float>  Algorithms::getAxisEnergy::operator() (const ROOT::Ve
 getAxisN::getAxisN(bool arg_pos){
 	_pos=arg_pos;
 }
-ROOT::VecOps::RVec<int>  Algorithms::getAxisN::operator() (const ROOT::VecOps::RVec<float> & angle,
+ROOT::VecOps::RVec<int>  getAxisN::operator() (const ROOT::VecOps::RVec<float> & angle,
 	                                                         const ROOT::VecOps::RVec<float> & charge){
   ROOT::VecOps::RVec<int> result={0,0,0};
   for (size_t i = 0; i < angle.size(); ++i) {
@@ -250,7 +396,7 @@ ROOT::VecOps::RVec<int>  Algorithms::getAxisN::operator() (const ROOT::VecOps::R
 getThrustPointing::getThrustPointing(float arg_dir){
   _dir=arg_dir;
 }
-ROOT::VecOps::RVec<float> Algorithms::getThrustPointing::operator()(const ROOT::VecOps::RVec<float> & in,
+ROOT::VecOps::RVec<float> getThrustPointing::operator()(const ROOT::VecOps::RVec<float> & in,
 	                                                                  const ROOT::VecOps::RVec<float> & rp_e,
 																																		const ROOT::VecOps::RVec<float> & thrust){
 
@@ -273,7 +419,7 @@ ROOT::VecOps::RVec<float> Algorithms::getThrustPointing::operator()(const ROOT::
 }
 
 
-float Algorithms::getMass(const ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> & in){
+float getMass(const ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> & in){
   ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> result;
   for (auto & p: in) {
     ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> tmp;
@@ -284,7 +430,7 @@ float Algorithms::getMass(const ROOT::VecOps::RVec<edm4hep::ReconstructedParticl
 }
 
 
-ROOT::VecOps::RVec<float> Algorithms::getAxisCosTheta(const ROOT::VecOps::RVec<float> & axis,
+ROOT::VecOps::RVec<float> getAxisCosTheta(const ROOT::VecOps::RVec<float> & axis,
 	                                                    const ROOT::VecOps::RVec<float> & px,
 																											const ROOT::VecOps::RVec<float> & py,
 																											const ROOT::VecOps::RVec<float> & pz){
@@ -299,7 +445,7 @@ ROOT::VecOps::RVec<float> Algorithms::getAxisCosTheta(const ROOT::VecOps::RVec<f
 }
 
 
-float Algorithms::getAxisCosTheta(const ROOT::VecOps::RVec<float> & axis,
+float getAxisCosTheta(const ROOT::VecOps::RVec<float> & axis,
 	                                float px,
 																	float py,
 																	float pz){
@@ -309,3 +455,7 @@ float Algorithms::getAxisCosTheta(const ROOT::VecOps::RVec<float> & axis,
 
   return result;
 }
+
+}//end NS Algorithms
+
+}//end NS FCCAnalyses
