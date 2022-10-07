@@ -1,3 +1,12 @@
+def setup_init_parser(parser):
+    publicOptions = parser.add_argument_group('User options')
+    publicOptions.add_argument('package', help='name of the analysis package to be built')
+    publicOptions.add_argument('--name', help='name of the main analysis utility', default='DummyAnalysis')
+    publicOptions.add_argument('--author', help="author's \"name <email@address>\" (will use git-config if not specified)")
+    publicOptions.add_argument('--description', help='analysis package description')
+    publicOptions.add_argument('--standalone', action='store_true', help="also add CMake directive to build standalone package", default=False)
+    publicOptions.add_argument('--output-dir', help='output directory where the analysis package will be written')
+
 def setup_run_parser(parser):
     publicOptions = parser.add_argument_group('User options')
     publicOptions.add_argument("pathToAnalysisScript", help="path to analysis script")
@@ -6,6 +15,7 @@ def setup_run_parser(parser):
     publicOptions.add_argument("--nevents", help="Specify max number of events to process", type=int, default=-1)
     publicOptions.add_argument("--test", action='store_true', help="Run over the test file", default=False)
     publicOptions.add_argument('--bench', action='store_true', help='Output benchmark results to a JSON file', default=False)
+    publicOptions.add_argument("--ncpus", help="Set number of threads", type=int)
     #publicOptions.add_argument("--final", action='store_true', help="Run final analysis (produces final histograms and trees)", default=False)
     #publicOptions.add_argument("--plots", action='store_true', help="Run analysis plots", default=False)
     publicOptions.add_argument("--preprocess", action='store_true', help="Run preprocessing", default=False)
