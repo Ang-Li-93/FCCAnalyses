@@ -10,19 +10,18 @@
 
 #include "TRandom3.h"
 
-/** Jet clustering utilities interface.
-This represents a set functions and utilities to perfom jet clustering from a list of.
-*/
 namespace FCCAnalyses {
-
+  /**
+   * @brief Jet clustering interface utilities.
+   *
+   * This represents a set functions and utilities to perform jet clustering
+   * from a list of particles.
+   */
   namespace JetClusteringUtils {
-
-    /** @name JetClusteringUtils
-   *  Jet clustering interface utilities.
-  */
-    ///@{
-
-    const int Nmax_dmerge = 10;  // maximum number of d_{n, n+1} that are kept in FCCAnalysesJet
+    /**
+     * Maximum number of d_{n, n+1} that are kept in FCCAnalysesJet
+     */
+    const int Nmax_dmerge = 10;
 
     /** Set fastjet pseudoJet for later reconstruction*/
     std::vector<fastjet::PseudoJet> set_pseudoJets(const ROOT::VecOps::RVec<float>& px,
@@ -31,13 +30,13 @@ namespace FCCAnalyses {
                                                    const ROOT::VecOps::RVec<float>& e);
 
     /** Set fastjet pseudoJet for later reconstruction using px, py, pz and m
-   *
-   * This version is to be preferred over the px,py,pz,E version when m is known
-   * accurately, because it uses double precision to reconstruct the energy,
-   * reducing the size of rounding errors on FastJet calculations (e.g. of
-   * PseudoJet masses)
-   *
-  */
+     *
+     * This version is to be preferred over the px,py,pz,E version when m is known
+     * accurately, because it uses double precision to reconstruct the energy,
+     * reducing the size of rounding errors on FastJet calculations (e.g. of
+     * PseudoJet masses)
+     *
+    */
     std::vector<fastjet::PseudoJet> set_pseudoJets_xyzm(const ROOT::VecOps::RVec<float>& px,
                                                         const ROOT::VecOps::RVec<float>& py,
                                                         const ROOT::VecOps::RVec<float>& pz,
@@ -78,13 +77,24 @@ namespace FCCAnalyses {
     /** Get jet eta. Details. */
     ROOT::VecOps::RVec<float> get_eta(const ROOT::VecOps::RVec<fastjet::PseudoJet>& in);
 
-    /** Get jet phi. Details. */
+    /** Get jet phi. Details (range [0,2*pi]). */
     ROOT::VecOps::RVec<float> get_phi(const ROOT::VecOps::RVec<fastjet::PseudoJet>& in);
+
+    /** Get jet phi. Details (range [-pi,pi]). */
+    ROOT::VecOps::RVec<float> get_phi_std(const ROOT::VecOps::RVec<fastjet::PseudoJet>& in);
+
 
     /** Get jet theta. Details. */
     ROOT::VecOps::RVec<float> get_theta(const ROOT::VecOps::RVec<fastjet::PseudoJet>& in);
 
-    ///Internal methods
+    ///Select clustered jets with transverse momentum greader than a minimum value [GeV]
+    struct sel_pt {
+      sel_pt(float arg_min_pt);
+      float m_min_pt = 1.; //> transverse momentum threshold [GeV]
+      ROOT::VecOps::RVec<fastjet::PseudoJet>  operator() (ROOT::VecOps::RVec<fastjet::PseudoJet> in);
+    };
+
+    /// Internal methods
     JetClustering::FCCAnalysesJet initialise_FCCAnalysesJet();
 
     JetClustering::FCCAnalysesJet build_FCCAnalysesJet(const std::vector<fastjet::PseudoJet>& in,
@@ -99,10 +109,19 @@ namespace FCCAnalyses {
 
     std::vector<float> exclusive_dmerge(fastjet::ClusterSequence& cs, int do_dmarge_max);
 
-    ///@}
+    // build the resonance from 2 <fastjet::PseudoJet> objects. Keep the closest to the mass given as input
+    struct resonanceBuilder {
+      float m_resonance_mass;
+      resonanceBuilder(float arg_resonance_mass);
+      ROOT::VecOps::RVec<fastjet::PseudoJet> operator()(ROOT::VecOps::RVec<fastjet::PseudoJet> legs);
+    };
 
+    struct recoilBuilder {
+      recoilBuilder(float arg_sqrts);
+      float m_sqrts = 240.0;
+      double operator() (ROOT::VecOps::RVec<fastjet::PseudoJet> in);
+    };
   }  // namespace JetClusteringUtils
-
 }  // namespace FCCAnalyses
 
 #endif

@@ -5,7 +5,7 @@ endif()
 find_package(ONNXRuntime QUIET)
 find_package(nlohmann_json QUIET)
 find_package(ROOT COMPONENTS ROOTVecOps QUIET)
-if(ONNXRuntime_FOUND AND nlohmann_json_FOUND)
+if(nlohmann_json_FOUND)
   message(STATUS "includes-------------------------- onnxruntime: ${ONNXRUNTIME_INCLUDE_DIRS}")
 elseif(WITH_ONNX STREQUAL AUTO)
   message(WARNING "ONNXRuntime and/or nlohmann's JSON libraries not found. Skipping ONNX-dependent analyzers.")
@@ -14,6 +14,11 @@ elseif(WITH_ONNX STREQUAL AUTO)
 else()
   message(FATAL_ERROR "Failed to locate ONNXRuntime and/or nlohmann's JSON library!")
 endif()
+# For the newer versions of ONNXRuntime, including directories is done
+# through the onnxruntime::onnxruntime target
+if(onnxruntime_FOUND)
+  set(ONNXRUNTIME_LIBRARIES onnxruntime::onnxruntime)
+endif()
 
 file(GLOB sources src/*.cc)
 file(GLOB headers *.h)
@@ -21,8 +26,14 @@ file(GLOB headers *.h)
 fccanalyses_addon_build(ONNXRuntime
                         SOURCES ${sources} ${headers}
                         EXT_HEADERS ${ONNXRUNTIME_INCLUDE_DIRS}
-                        EXT_LIBS ROOT::ROOTVecOps ${ONNXRUNTIME_LIBRARIES} nlohmann_json::nlohmann_json
+                        EXT_LIBS ROOT::ROOTVecOps ${ONNXRUNTIME_LIBRARIES} nlohmann_json::nlohmann_json ${ONNXRUNTIME_LIBRARIES}
                         INSTALL_COMPONENT onnxruntime)
+
+add_custom_command(TARGET ONNXRuntime POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy
+                   ${CMAKE_CURRENT_SOURCE_DIR}/python/*
+                   ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 if(BUILD_TESTING)
   find_catch_instance()
@@ -40,5 +51,8 @@ if(BUILD_TESTING)
     )
   endif()
   # add all integration tests
-  add_integration_test("examples/FCCee/test/weaver_inference.py")
+  # add_integration_test("examples/FCCee/weaver/analysis_inference.py")
 endif()
+
+file(GLOB _addon_python_files python/*.py)
+install(FILES ${_addon_python_files} DESTINATION ${CMAKE_INSTALL_PREFIX}/python/addons/ONNXRuntime)

@@ -14,11 +14,14 @@
 #include "edm4hep/Vector2i.h"
 
 
-/** MCParticle interface.
-This represents a set functions and utilities to access and perform operations on the MCParticle collection.
-*/
 namespace FCCAnalyses{
 
+/**
+ * Analyzers operating on/with Monte Carlo particles.
+ *
+ * This represents a set functions and utilities to access and perform
+ * operations on the MCParticle collection.
+ */
 namespace MCParticle{
 
   /// Filter events based on a MCParticles PDGID
@@ -72,6 +75,13 @@ namespace MCParticle{
     get_EventPrimaryVertex( int arg_genstatus  );
     int m_genstatus = 21;   // Pythia8  code of the incoming particles of the hardest subprocess
     TVector3  operator() (ROOT::VecOps::RVec<edm4hep::MCParticleData> in);
+  };
+
+  /// return the event primary vertex position and time (mm)
+  struct get_EventPrimaryVertexP4 {
+    get_EventPrimaryVertexP4();
+    int m_genstatus = 21;   // Pythia8  code of the incoming particles of the hardest subprocess
+    TLorentzVector  operator() (ROOT::VecOps::RVec<edm4hep::MCParticleData> in);
   };
 
 
