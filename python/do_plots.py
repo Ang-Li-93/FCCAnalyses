@@ -254,7 +254,7 @@ def runPlots(var, sel, param, hsignal, hbackgrounds, extralab, splitLeg,
         colors.append(param.colors[b])
 
     intLumiab = param.intLumi/1e+06
-    intLumi = f'L = {intLumiab:.0f} ab^{{-1}}'
+    intLumi = f'L = {intLumiab:.1f} ab^{{-1}}'
     if hasattr(param, "intLumiLabel"):
         intLumi = getattr(param, "intLumiLabel")
 

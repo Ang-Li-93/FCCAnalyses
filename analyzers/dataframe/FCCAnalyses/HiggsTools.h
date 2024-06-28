@@ -98,6 +98,7 @@ namespace HiggsTools{
     int m_pdg = 13;
     bool m_chargeconjugate = true;
     ROOT::VecOps::RVec<int>  operator() (ROOT::VecOps::RVec<edm4hep::MCParticleData> in);
+    ROOT::VecOps::RVec<int>  operator() (ROOT::VecOps::RVec<edm4hep::MCParticleData> in, ROOT::VecOps::RVec<int> mcind);
   };
 
   struct coneIsolation {
@@ -228,5 +229,9 @@ namespace HiggsTools{
 
   ROOT::VecOps::RVec<edm4hep::MCParticleData> get_gen_pdg(ROOT::VecOps::RVec<edm4hep::MCParticleData> mc, int pdgId, bool abs);
 
+  ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> missing(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> in, float ecm, float p_cutoff = 0.0);
+  ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> visible(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> in, float p_cutoff = 0.0);
+
+  float ZHChi2(float mZ, float mH, float chi2_H_frac = 0.5);
 }
 #endif

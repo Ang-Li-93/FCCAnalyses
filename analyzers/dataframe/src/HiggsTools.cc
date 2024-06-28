@@ -689,6 +689,7 @@ ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> HiggsTools::resonanceBuil
 }
 
 gen_sel_pdgIDInt::gen_sel_pdgIDInt(int arg_pdg, bool arg_chargeconjugate) : m_pdg(arg_pdg), m_chargeconjugate( arg_chargeconjugate )  {};
+
 ROOT::VecOps::RVec<int>  HiggsTools::gen_sel_pdgIDInt::gen_sel_pdgIDInt::operator() (ROOT::VecOps::RVec<edm4hep::MCParticleData> in) {
   ROOT::VecOps::RVec<int> result;
   for(size_t i = 0; i < in.size(); ++i) {
@@ -702,6 +703,23 @@ ROOT::VecOps::RVec<int>  HiggsTools::gen_sel_pdgIDInt::gen_sel_pdgIDInt::operato
   }
   return result;
 }
+
+ROOT::VecOps::RVec<int>  HiggsTools::gen_sel_pdgIDInt::gen_sel_pdgIDInt::operator() (ROOT::VecOps::RVec<edm4hep::MCParticleData> in, ROOT::VecOps::RVec<int> mcind) {
+  ROOT::VecOps::RVec<int> result;
+  for(size_t i = 0; i < mcind.size(); ++i) {
+    int index = mcind[i];
+    auto & p = in[index];
+    if(m_chargeconjugate) {
+      if(std::abs( p.PDG) == std::abs(m_pdg)) result.push_back(index);
+    }
+    else {
+      if(p.PDG == m_pdg) result.push_back(index);
+    }
+  }
+  return result;
+}
+
+
 
 // for a given MC index, it returns whether or not one of these muons come (indirectly) from a Higgs decay
 bool HiggsTools::from_Higgsdecay(int i, ROOT::VecOps::RVec<edm4hep::MCParticleData> in, ROOT::VecOps::RVec<int> ind) {
@@ -1606,3 +1624,58 @@ ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>  recoilBuilder_boosted::o
   result.push_back(recoil_fcc);
   return result;
 };
+
+
+ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> HiggsTools::missing(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> in, float ecm, float p_cutoff) {
+
+    TLorentzVector tlv_ecm(0, 0, 0, ecm);
+    TLorentzVector P4sum;
+    for (auto & p: in) {
+      TLorentzVector tlv;
+      tlv.SetXYZM(p.momentum.x, p.momentum.y, p.momentum.z, p.mass);
+      P4sum += tlv;
+    }
+
+    TLorentzVector P4miss;
+    P4miss = tlv_ecm - P4sum;
+    
+    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> ret;
+    edm4hep::ReconstructedParticleData res;
+    res.momentum.x = P4miss.Px();
+    res.momentum.y = P4miss.Py();
+    res.momentum.z = P4miss.Pz();
+    res.energy = P4miss.E();
+    res.mass = P4miss.M();
+    ret.emplace_back(res);
+    return ret;
+}
+
+ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> HiggsTools::visible(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> in, float p_cutoff) {
+    TLorentzVector P4sum;
+    for (auto & p: in) {
+      TLorentzVector tlv;
+      tlv.SetXYZM(p.momentum.x, p.momentum.y, p.momentum.z, p.mass);
+      P4sum += tlv;
+    }
+
+    
+    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> ret;
+    edm4hep::ReconstructedParticleData res;
+    res.momentum.x = P4sum.Px();
+    res.momentum.y = P4sum.Py();
+    res.momentum.z = P4sum.Pz();
+    res.energy = P4sum.E();
+    res.mass = P4sum.M();
+    ret.emplace_back(res);
+    return ret;
+}
+
+
+float HiggsTools::ZHChi2(float mZ, float mH, float chi2_H_frac) {
+  float mZ_real = 91.2;
+  float mH_real = 125.;
+  float chiZ = std::pow(mZ - mZ_real, 2); // mass
+  float chiH = std::pow(mH - mH_real, 2); // recoil
+  float chi2 = (1.0-chi2_H_frac)*chiZ + chi2_H_frac*chiH;
+  return chi2;
+}
