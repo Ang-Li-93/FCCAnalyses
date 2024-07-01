@@ -98,7 +98,6 @@ namespace HiggsTools{
     int m_pdg = 13;
     bool m_chargeconjugate = true;
     ROOT::VecOps::RVec<int>  operator() (ROOT::VecOps::RVec<edm4hep::MCParticleData> in);
-    ROOT::VecOps::RVec<int>  operator() (ROOT::VecOps::RVec<edm4hep::MCParticleData> in, ROOT::VecOps::RVec<int> mcind);
   };
 
   struct coneIsolation {

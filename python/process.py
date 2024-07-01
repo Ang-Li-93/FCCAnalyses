@@ -173,6 +173,7 @@ def get_process_dict_dirs() -> list[str]:
     Get search directories for the process dictionaries
     '''
     dirs_var = os.getenv('FCCDICTSDIR')
+    print(dirs_var) 
     if dirs_var is None:
         LOGGER.error('Environment variable FCCDICTSDIR not defined!\n'
                      'Was the setup.sh file sourced properly?\n'

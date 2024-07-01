@@ -704,23 +704,6 @@ ROOT::VecOps::RVec<int>  HiggsTools::gen_sel_pdgIDInt::gen_sel_pdgIDInt::operato
   return result;
 }
 
-ROOT::VecOps::RVec<int>  HiggsTools::gen_sel_pdgIDInt::gen_sel_pdgIDInt::operator() (ROOT::VecOps::RVec<edm4hep::MCParticleData> in, ROOT::VecOps::RVec<int> mcind) {
-  ROOT::VecOps::RVec<int> result;
-  for(size_t i = 0; i < mcind.size(); ++i) {
-    int index = mcind[i];
-    auto & p = in[index];
-    if(m_chargeconjugate) {
-      if(std::abs( p.PDG) == std::abs(m_pdg)) result.push_back(index);
-    }
-    else {
-      if(p.PDG == m_pdg) result.push_back(index);
-    }
-  }
-  return result;
-}
-
-
-
 // for a given MC index, it returns whether or not one of these muons come (indirectly) from a Higgs decay
 bool HiggsTools::from_Higgsdecay(int i, ROOT::VecOps::RVec<edm4hep::MCParticleData> in, ROOT::VecOps::RVec<int> ind) {
 
