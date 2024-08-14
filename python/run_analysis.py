@@ -355,10 +355,14 @@ def send_to_batch(rdf_module, chunk_list, process, anapath: str):
     current_date = datetime.datetime.fromtimestamp(
         datetime.datetime.now().timestamp()).strftime('%Y-%m-%d_%H-%M-%S')
     log_dir = os.path.join(local_dir, 'BatchOutputs', current_date, process)
+    
+    if "FCCAnalyses" not in os.environ:
+        local_dir = local_dir + "/FCCAnalyses"
+
     if not os.path.exists(log_dir):
         os.system(f'mkdir -p {log_dir}')
 
-    # Making sure the FCCAnalyses libraries are compiled and installed
+    # Maki"ng sure the FCCAnalyses libraries are compiled and installed
     try:
         subprocess.check_output(['make', 'install'],
                                 cwd=local_dir+'/build',
