@@ -687,6 +687,7 @@ ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> HiggsTools::resonanceBuil
         return result;
     }
 }
+HiggsTools::resonanceBuilder_mass_recoil2::resonanceBuilder_mass_recoil2(float arg_resonance_mass, float arg_recoil_mass, float arg_chi2_recoil_frac, float arg_ecm, bool arg_use_MC_Kinematics) {m_resonance_mass = arg_resonance_mass, m_recoil_mass = arg_recoil_mass, chi2_recoil_frac = arg_chi2_recoil_frac, ecm = arg_ecm, m_use_MC_Kinematics = arg_use_MC_Kinematics;}
 
 ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> HiggsTools::resonanceBuilder_mass_recoil2::resonanceBuilder_mass_recoil2::operator()(
     ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> legs,
