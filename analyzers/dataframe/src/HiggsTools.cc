@@ -688,6 +688,183 @@ ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> HiggsTools::resonanceBuil
     }
 }
 
+ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> HiggsTools::resonanceBuilder_mass_recoil2::resonanceBuilder_mass_recoil2::operator()(
+    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> legs,
+    ROOT::VecOps::RVec<int> recind,
+    ROOT::VecOps::RVec<int> mcind,
+    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> reco,
+    ROOT::VecOps::RVec<edm4hep::MCParticleData> mc,
+    ROOT::VecOps::RVec<int> parents,
+    ROOT::VecOps::RVec<int> daugthers)
+{
+    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> result;
+    result.reserve(3);
+    std::vector<std::vector<int>> pairs; // for each permutation, add the indices of the leptons
+    int n = legs.size();
+
+    if(n > 1) {
+        /*
+        ROOT::VecOps::RVec<bool> v(n);
+        std::fill(v.end() - 2, v.end(), true); // helper variable for permutations
+        
+        int idx_1 = -1;
+        int idx_2 = -1;
+        do {
+            std::vector<int> pair;
+            edm4hep::ReconstructedParticleData reso;
+            reso.charge = 0;
+            TLorentzVector reso_lv;
+            int idx_1_ = -1;
+            int idx_2_ = -1;
+            for(int i = 0; i < n; ++i) {
+                if(v[i]) {
+                    if(idx_1_ == -1) idx_1_ = i;
+                    else idx_2_ = i;
+                    pair.push_back(i);
+                    reso.charge += legs[i].charge;
+                    TLorentzVector leg_lv;
+
+                    if(m_use_MC_Kinematics) { // MC kinematics
+                        int track_index = legs[i].tracks_begin;   // index in the Track array
+                        int mc_index = FCCAnalyses::ReconstructedParticle2MC::getTrack2MC_index(track_index, recind, mcind, reco);
+                        if (mc_index >= 0 && mc_index < mc.size()) {
+                            leg_lv.SetXYZM(mc.at(mc_index).momentum.x, mc.at(mc_index).momentum.y,
+                                           mc.at(mc_index).momentum.z, mc.at(mc_index).mass);
+                        }
+                    }
+                    else { // reco kinematics
+                        leg_lv.SetXYZM(legs[i].momentum.x, legs[i].momentum.y,
+                                       legs[i].momentum.z, legs[i].mass);
+                    }
+                    reso_lv += leg_lv;
+                }
+            }
+
+            if(reso.charge != 0) continue; // neglect non-zero charge pairs
+            if(reso_lv.M() < (m_recoil_mass+1) && reso_lv.M() > (m_recoil_mass-1)) {
+                idx_1 = idx_1_;
+                idx_2 = idx_2_;
+                break;
+            }
+        } while(std::next_permutation(v.begin(), v.end()));
+        */
+
+        ROOT::VecOps::RVec<bool> w(n);
+        std::fill(w.end() - 2, w.end(), true); // helper variable for permutations
+
+        do {
+            std::vector<int> pair;
+            edm4hep::ReconstructedParticleData reso;
+            reso.charge = 0;
+            TLorentzVector reso_lv; 
+            for(int i = 0; i < n; ++i) {
+                // if(i==idx_1 || i==idx_2) continue;
+                if(w[i]) {
+                    pair.push_back(i);
+                    reso.charge += legs[i].charge;
+                    TLorentzVector leg_lv;
+
+                    if(m_use_MC_Kinematics) { // MC kinematics
+                        int track_index = legs[i].tracks_begin;   // index in the Track array
+                        int mc_index = FCCAnalyses::ReconstructedParticle2MC::getTrack2MC_index(track_index, recind, mcind, reco);
+                        if (mc_index >= 0 && mc_index < mc.size()) {
+                            leg_lv.SetXYZM(mc.at(mc_index).momentum.x, mc.at(mc_index).momentum.y,
+                                           mc.at(mc_index).momentum.z, mc.at(mc_index).mass);
+                        }
+                    }
+                    else { // reco kinematics
+                        leg_lv.SetXYZM(legs[i].momentum.x, legs[i].momentum.y,
+                                       legs[i].momentum.z, legs[i].mass);
+                    }
+                    reso_lv += leg_lv;
+                }
+            }
+
+            if(reso.charge != 0) continue; // neglect non-zero charge pairs
+            // if(reso_lv.M() < (m_recoil_mass+5) && reso_lv.M() > (m_recoil_mass-5)) continue; // avoid Higgs
+            reso.momentum.x = reso_lv.Px();
+            reso.momentum.y = reso_lv.Py();
+            reso.momentum.z = reso_lv.Pz();
+            reso.mass = reso_lv.M();
+            result.emplace_back(reso);
+            pairs.push_back(pair);
+        } while(std::next_permutation(w.begin(), w.end()));
+    }
+    else {
+        // Return dummy objects when there are insufficient legs.
+        auto dummy = edm4hep::ReconstructedParticleData();
+        dummy.momentum.x = 0;
+        dummy.momentum.y = 0;
+        dummy.momentum.z = 0;
+        dummy.mass = 0;
+        result.emplace_back(dummy);
+        result.emplace_back(dummy);
+        result.emplace_back(dummy);
+        return result;
+    }
+
+    if(result.size() > 1) {
+        ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> bestReso;
+        int idx_min = -1;
+        float d_min = 9e9;
+        for (int i = 0; i < result.size(); ++i) {
+            // Calculate recoil
+            auto recoil_p4 = TLorentzVector(0, 0, 0, ecm);
+            TLorentzVector tv1;
+            tv1.SetXYZM(result.at(i).momentum.x, result.at(i).momentum.y,
+                        result.at(i).momentum.z, result.at(i).mass);
+            recoil_p4 -= tv1;
+
+            auto recoil_fcc = edm4hep::ReconstructedParticleData();
+            recoil_fcc.momentum.x = recoil_p4.Px();
+            recoil_fcc.momentum.y = recoil_p4.Py();
+            recoil_fcc.momentum.z = recoil_p4.Pz();
+            recoil_fcc.mass = recoil_p4.M();
+
+            TLorentzVector tg;
+            tg.SetXYZM(result.at(i).momentum.x, result.at(i).momentum.y,
+                       result.at(i).momentum.z, result.at(i).mass);
+
+            float mass_term = std::pow(result.at(i).mass - m_resonance_mass, 2); // resonance mass deviation
+            float recoil_term = std::pow(recoil_fcc.mass - m_recoil_mass, 2);    // recoil mass deviation
+            float d = (1.0 - chi2_recoil_frac) * mass_term + chi2_recoil_frac * recoil_term;
+
+            if(d < d_min) {
+                d_min = d;
+                idx_min = i;
+            }
+        }
+        if(idx_min > -1) { 
+            bestReso.push_back(result.at(idx_min));
+            auto & l1 = legs[pairs[idx_min][0]];
+            auto & l2 = legs[pairs[idx_min][1]];
+            bestReso.emplace_back(l1);
+            bestReso.emplace_back(l2);
+        }
+        else {
+            std::cout << "ERROR: resonanceBuilder_mass_recoil, no mininum found. RETURN DUMMY." << std::endl;
+            auto dummy = edm4hep::ReconstructedParticleData();
+            dummy.momentum.x = 0;
+            dummy.momentum.y = 0;
+            dummy.momentum.z = 0;
+            dummy.mass = 0;
+            result.emplace_back(dummy);
+            result.emplace_back(dummy);
+            result.emplace_back(dummy);
+            return result;
+        }
+        return bestReso;
+    }
+    else {
+        auto & l1 = legs[0];
+        auto & l2 = legs[1];
+        result.emplace_back(l1);
+        result.emplace_back(l2);
+        return result;
+    }
+}
+
+
 gen_sel_pdgIDInt::gen_sel_pdgIDInt(int arg_pdg, bool arg_chargeconjugate) : m_pdg(arg_pdg), m_chargeconjugate( arg_chargeconjugate )  {};
 
 ROOT::VecOps::RVec<int>  HiggsTools::gen_sel_pdgIDInt::gen_sel_pdgIDInt::operator() (ROOT::VecOps::RVec<edm4hep::MCParticleData> in) {

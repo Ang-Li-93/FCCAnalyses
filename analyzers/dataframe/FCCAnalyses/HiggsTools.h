@@ -62,7 +62,23 @@ namespace HiggsTools{
                           ROOT::VecOps::RVec<edm4hep::MCParticleData> mc,
                           ROOT::VecOps::RVec<int> parents,
                           ROOT::VecOps::RVec<int> daugthers) ;
-  }; 
+  };
+  
+  struct resonanceBuilder_mass_recoil2 {
+    float m_resonance_mass;
+    float m_recoil_mass;
+    float chi2_recoil_frac;
+    float ecm;
+    bool m_use_MC_Kinematics;
+    resonanceBuilder_mass_recoil2(float arg_resonance_mass, float arg_recoil_mass, float arg_chi2_recoil_frac, float arg_ecm, bool arg_use_MC_Kinematics);
+    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> operator()(ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> legs,
+                    ROOT::VecOps::RVec<int> recind,
+                    ROOT::VecOps::RVec<int> mcind,
+                    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> reco,
+                    ROOT::VecOps::RVec<edm4hep::MCParticleData> mc,
+                    ROOT::VecOps::RVec<int> parents,
+                    ROOT::VecOps::RVec<int> daugthers) ;
+}; 
 
   /// muon scale shifts
   struct momentum_scale {
