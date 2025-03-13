@@ -1,5 +1,13 @@
 # FCCAnalyses
 
+[![DOI](https://zenodo.org/badge/177151745.svg)](https://zenodo.org/doi/10.5281/zenodo.4767810)
+
+`master`: [![test](https://github.com/HEP-FCC/FCCAnalyses/actions/workflows/test.yml/badge.svg)](https://github.com/HEP-FCC/FCCAnalyses/actions/workflows/test.yml)
+[![docs](https://github.com/HEP-FCC/FCCAnalyses/actions/workflows/docs.yml/badge.svg)](https://github.com/HEP-FCC/FCCAnalyses/actions/workflows/docs.yml)
+[![bench](https://github.com/HEP-FCC/FCCAnalyses/actions/workflows/bench.yml/badge.svg)](https://github.com/HEP-FCC/FCCAnalyses/actions/workflows/bench.yml)
+
+`pre-edm4hep1`: [![test-pre-edm4hep1](https://github.com/HEP-FCC/FCCAnalyses/actions/workflows/test.yml/badge.svg?branch=pre-edm4hep1)](https://github.com/HEP-FCC/FCCAnalyses/actions/workflows/test.yml)
+
 Common framework for FCC related analyses. This framework allows one to write
 full analysis, taking [EDM4hep](https://github.com/key4hep/EDM4hep) input ROOT
 files and producing the plots.
@@ -43,7 +51,7 @@ campaigns one needs to compile `pre-edm4hep1` branch of the FCCAnalyses in the
 
 All sample information, including Key4hep stack used for the campaign, is
 collected at the
-[FCC Physics Events](http://fcc-physics-events.web.cern.ch/fcc-physics-events/)
+[FCC Physics Events](https://fcc-physics-events.web.cern.ch/)
 website.
 
 
