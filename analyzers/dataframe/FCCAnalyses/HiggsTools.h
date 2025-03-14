@@ -88,13 +88,13 @@ namespace HiggsTools{
   };
   /// to be added to your ReconstructedParticle.h :
   
-  /// select ReconstructedParticles with a given type 
-  struct sel_type {
-    sel_type( int arg_pdg, bool arg_chargeconjugate);
-    int m_pdg = 13;
-    bool m_chargeconjugate = true;
-    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>  operator() (ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> in);
-  };
+//  /// select ReconstructedParticles with a given type 
+//  struct sel_type {
+//    sel_type( int arg_pdg, bool arg_chargeconjugate);
+//    int m_pdg = 13;
+//    bool m_chargeconjugate = true;
+//    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>  operator() (ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> in);
+//  };
 
   struct sel_isol {
     sel_isol(float arg_isocut);
