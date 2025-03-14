@@ -477,6 +477,7 @@ int getJet_ntags(ROOT::VecOps::RVec<bool> in) {
   return result;
 }
 
+//
 }//end NS ReconstructedParticle
 
 }//end NS FCCAnalyses
