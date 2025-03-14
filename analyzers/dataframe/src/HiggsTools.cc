@@ -289,22 +289,33 @@ ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>  HiggsTools::momentum_sca
 }
 
 /// to be added to your ReconstructedParticle.cc
-sel_type::sel_type( int arg_pdg, bool arg_chargeconjugate) : m_pdg(arg_pdg), m_chargeconjugate( arg_chargeconjugate )  {};
-
-ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>  HiggsTools::sel_type::operator() (ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> in) {
-  ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> result;
-  result.reserve(in.size());
-  for (size_t i = 0; i < in.size(); ++i) {
-    auto & p = in[i];
-    if ( m_chargeconjugate ) {
-        if ( std::abs( p.type ) == std::abs( m_pdg)  ) result.emplace_back(p);
-    }
-    else {
-        if ( p.type == m_pdg ) result.emplace_back(p);
-    }
-  }
-  return result;
-}
+//sel_type::sel_type( int arg_pdg, bool arg_chargeconjugate) : m_pdg(arg_pdg), m_chargeconjugate( arg_chargeconjugate )  {};
+//
+//ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>  HiggsTools::sel_type::operator() (ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> in) {
+//  ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> result;
+//  result.reserve(in.size());
+//  for (size_t i = 0; i < in.size(); ++i) {
+//    auto & p = in[i];
+//    if ( m_chargeconjugate ) {
+//#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+//      if ( std::abs( p.PDG ) == std::abs( m_pdg)  ) {
+//#else
+//      if ( std::abs( p.type ) == std::abs( m_pdg)  ) {
+//#endif
+//        result.emplace_back(p); 
+//      } 
+//    }
+//    else {
+//#if edm4hep_VERSION > EDM4HEP_VERSION(0, 10, 5)
+//      if ( p.type == m_pdg ) {
+//#else
+//      if ( p.type == m_pdg ) {
+//#endif
+//        result.emplace_back(p);
+//      } 
+//    }
+//  return result;
+//}
 
 ROOT::VecOps::RVec<float> Isolation( ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> particles, ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> in ) {
 
